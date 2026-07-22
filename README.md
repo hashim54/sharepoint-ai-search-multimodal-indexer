@@ -85,14 +85,13 @@ Required variables in `.env`:
 | `AZ_SUBSCRIPTION_ID` | Target subscription |
 | `AZ_RG` | Dedicated resource group (created by step 1) |
 | `RESOURCE_LOCATION` | Region for **all** resources (default `swedencentral`) |
-| `SEARCH_NAME` | Globally-unique Search service name to create |
-| `FOUNDRY_NAME` | Globally-unique Foundry account name to create |
-| `VISION_NAME` | Globally-unique Vision account name to create |
 | `SP_SITE_URL`, `SP_APP_CLIENT_ID`, `SP_APP_TENANT_ID`, `SP_APP_CLIENT_SECRET` | SharePoint site + app registration |
 
-Optional overrides (defaults in `_common.ps1`): `EMBED_*`, `CU_MODEL_*`, `GPT_*` (model deployments/SKUs/capacities), `SEARCH_SKU`, `INDEX_NAME`, `DATASOURCE_NAME`, `SKILLSET_NAME`, `INDEXER_NAME`, `SEARCH_API_VERSION`, and `QUERY_PRINCIPAL_ID` (force the Search Index Data Reader grant).
+**Resource names are auto-generated.** If you don't set `SEARCH_NAME` / `FOUNDRY_NAME` / `VISION_NAME`, step 1 generates globally-unique names as `<RESOURCE_PREFIX>-<role>-<random-suffix>` (default prefix `spmmrag`) and persists them to `.env.derived`, so re-runs reuse them. Set `RESOURCE_PREFIX` to brand them, or set the full names explicitly to pin them.
 
-> The name values for Search / Foundry / Vision must be **globally unique**. If a name is taken, deployment preflight fails with `ServiceNameUnavailable` / `CustomDomainInUse` — pick a different name.
+Optional overrides (defaults in `_common.ps1`): `RESOURCE_PREFIX`, `SEARCH_NAME`/`FOUNDRY_NAME`/`VISION_NAME`, `EMBED_*`, `CU_MODEL_*`, `GPT_*` (model deployments/SKUs/capacities), `SEARCH_SKU`, `INDEX_NAME`, `DATASOURCE_NAME`, `SKILLSET_NAME`, `INDEXER_NAME`, `SEARCH_API_VERSION`, and `QUERY_PRINCIPAL_ID` (force the Search Index Data Reader grant).
+
+> If you pin names explicitly, the Search / Foundry / Vision names must be **globally unique**. If a name is taken, deployment preflight fails with `ServiceNameUnavailable` / `CustomDomainInUse` — pick a different name (or just leave them unset to auto-generate).
 
 ---
 

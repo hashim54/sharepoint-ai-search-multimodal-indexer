@@ -23,8 +23,7 @@ param(
 Initialize-Env
 
 Assert-EnvVar -Names @(
-    'AZ_SUBSCRIPTION_ID', 'AZ_RG', 'RESOURCE_LOCATION',
-    'SEARCH_NAME', 'FOUNDRY_NAME', 'VISION_NAME'
+    'AZ_SUBSCRIPTION_ID', 'AZ_RG', 'RESOURCE_LOCATION'
 )
 
 # Resolve the deploying user's object ID so Bicep can grant them Search Index
@@ -66,6 +65,28 @@ Assert-LastExit 'az account set'
 Write-Host "==> Ensuring resource group '$env:AZ_RG' in $env:RESOURCE_LOCATION" -ForegroundColor Cyan
 az group create --name $env:AZ_RG --location $env:RESOURCE_LOCATION --output none
 Assert-LastExit 'az group create'
+
+# ---- Resolve globally-unique resource names ----
+# Priority: an explicit name (from .env, or a prior run's .env.derived) wins.
+# Otherwise generate "<prefix>-<role>-<suffix>" once and persist it to
+# .env.derived, so re-runs reuse the same names (idempotent) while a fresh
+# teardown (which removes .env.derived) yields brand-new unique names. Set
+# RESOURCE_PREFIX in .env to control the base; it defaults to 'spmmrag'.
+$prefix = if ([string]::IsNullOrWhiteSpace($env:RESOURCE_PREFIX)) { 'spmmrag' }
+         else { ($env:RESOURCE_PREFIX).ToLower() -replace '[^a-z0-9]', '' }
+$suffix = -join ((97..122) + (48..57) | Get-Random -Count 6 | ForEach-Object { [char]$_ })
+
+foreach ($pair in @(
+        @{ Var = 'SEARCH_NAME';  Role = 'search' },
+        @{ Var = 'FOUNDRY_NAME'; Role = 'foundry' },
+        @{ Var = 'VISION_NAME';  Role = 'vision' })) {
+    $existing = [System.Environment]::GetEnvironmentVariable($pair.Var, 'Process')
+    if ([string]::IsNullOrWhiteSpace($existing)) {
+        $generated = "$prefix-$($pair.Role)-$suffix"
+        Set-DerivedVar -Name $pair.Var -Value $generated   # persists to .env.derived + sets process env
+        Write-Host "==> Generated $($pair.Var) = $generated" -ForegroundColor Cyan
+    }
+}
 
 # ---- 1) Compile Bicep -> ARM JSON into a space-free path ----
 $bicepPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'iac\main.bicep'
