@@ -1,0 +1,113 @@
+{
+  "name": "<REPLACE_SKILLSET_NAME>",
+  "description": "Multimodal, ACL-preserving skillset. CU extracts text sections (with inline figure descriptions) + normalized images; text is embedded with text-embedding-3-large; images are embedded with Azure AI Vision multimodal (1024-dim). Two index projections emit text rows (kind=text) and image rows (kind=image), both carrying SharePoint ACLs. No ACL-breaking skills (Custom Web API / GenAI Prompt / Knowledge store).",
+  "skills": [
+    {
+      "@odata.type": "#Microsoft.Skills.Util.ContentUnderstandingSkill",
+      "name": "content-understanding",
+      "description": "Reads the file (<=200MB, <=300 pages), semantically chunks to Markdown text_sections with inline gpt-4.1-mini figure descriptions, and extracts normalized images with page location metadata.",
+      "context": "/document",
+      "modelName": "gpt-4.1-mini",
+      "modelDeployment": "gpt-4.1-mini",
+      "extractionOptions": [ "images", "locationMetadata" ],
+      "chunkingProperties": { "method": "semantic", "unit": "tokens", "maximumLength": 500 },
+      "inputs": [ { "name": "file_data", "source": "/document/file_data" } ],
+      "outputs": [
+        { "name": "text_sections", "targetName": "pages" },
+        { "name": "normalized_images", "targetName": "images" }
+      ]
+    },
+    {
+      "@odata.type": "#Microsoft.Skills.Text.AzureOpenAIEmbeddingSkill",
+      "name": "text-embedding",
+      "description": "Vectorizes each text section with text-embedding-3-large (3072 dims).",
+      "context": "/document/pages/*",
+      "resourceUri": "<REPLACE_FOUNDRY_ENDPOINT>",
+      "deploymentId": "text-embedding-3-large",
+      "modelName": "text-embedding-3-large",
+      "dimensions": 3072,
+      "inputs": [ { "name": "text", "source": "/document/pages/*/content" } ],
+      "outputs": [ { "name": "embedding", "targetName": "page_vector" } ]
+    },
+    {
+      "@odata.type": "#Microsoft.Skills.Vision.VectorizeSkill",
+      "name": "image-embedding",
+      "description": "Vectorizes each extracted image with Azure AI Vision multimodal embeddings (1024 dims). Keyless billing via the attached Foundry resource.",
+      "context": "/document/images/*",
+      "modelVersion": "2023-04-15",
+      "inputs": [ { "name": "image", "source": "/document/images/*" } ],
+      "outputs": [ { "name": "vector", "targetName": "image_vector" } ]
+    },
+    {
+      "@odata.type": "#Microsoft.Skills.Util.ConditionalSkill",
+      "name": "kind-text",
+      "description": "Emits the constant discriminator kind='text' on each text section.",
+      "context": "/document/pages/*",
+      "inputs": [
+        { "name": "condition", "source": "= true" },
+        { "name": "whenTrue", "source": "= 'text'" },
+        { "name": "whenFalse", "source": "= 'text'" }
+      ],
+      "outputs": [ { "name": "output", "targetName": "kind" } ]
+    },
+    {
+      "@odata.type": "#Microsoft.Skills.Util.ConditionalSkill",
+      "name": "kind-image",
+      "description": "Emits the constant discriminator kind='image' on each extracted image.",
+      "context": "/document/images/*",
+      "inputs": [
+        { "name": "condition", "source": "= true" },
+        { "name": "whenTrue", "source": "= 'image'" },
+        { "name": "whenFalse", "source": "= 'image'" }
+      ],
+      "outputs": [ { "name": "output", "targetName": "kind" } ]
+    }
+  ],
+  "cognitiveServices": {
+    "@odata.type": "#Microsoft.Azure.Search.AIServicesByIdentity",
+    "description": "Search MI authenticates to the Foundry (AIServices) for CU + Vision multimodal embeddings (keyless).",
+    "subdomainUrl": "<REPLACE_FOUNDRY_ENDPOINT>"
+  },
+  "indexProjections": {
+    "selectors": [
+      {
+        "targetIndexName": "<REPLACE_INDEX_NAME>",
+        "parentKeyFieldName": "parent_id",
+        "sourceContext": "/document/pages/*",
+        "mappings": [
+          { "name": "kind", "source": "/document/pages/*/kind" },
+          { "name": "content", "source": "/document/pages/*/content" },
+          { "name": "contentVector", "source": "/document/pages/*/page_vector" },
+          { "name": "page", "source": "/document/pages/*/locationMetadata/pageNumberFrom" },
+          { "name": "pageTo", "source": "/document/pages/*/locationMetadata/pageNumberTo" },
+          { "name": "sourceFile", "source": "/document/metadata_spo_item_name" },
+          { "name": "metadata_spo_item_path", "source": "/document/metadata_spo_item_path" },
+          { "name": "webUrl", "source": "/document/metadata_spo_item_weburi" },
+          { "name": "lastModified", "source": "/document/metadata_spo_item_last_modified" },
+          { "name": "UserIds", "source": "/document/metadata_user_ids" },
+          { "name": "GroupIds", "source": "/document/metadata_group_ids" }
+        ]
+      },
+      {
+        "targetIndexName": "<REPLACE_INDEX_NAME>",
+        "parentKeyFieldName": "parent_id_img",
+        "sourceContext": "/document/images/*",
+        "mappings": [
+          { "name": "kind", "source": "/document/images/*/kind" },
+          { "name": "imageVector", "source": "/document/images/*/image_vector" },
+          { "name": "imagePath", "source": "/document/images/*/imagePath" },
+          { "name": "imageData", "source": "/document/images/*/data" },
+          { "name": "page", "source": "/document/images/*/locationMetadata/pageNumberFrom" },
+          { "name": "pageTo", "source": "/document/images/*/locationMetadata/pageNumberTo" },
+          { "name": "sourceFile", "source": "/document/metadata_spo_item_name" },
+          { "name": "metadata_spo_item_path", "source": "/document/metadata_spo_item_path" },
+          { "name": "webUrl", "source": "/document/metadata_spo_item_weburi" },
+          { "name": "lastModified", "source": "/document/metadata_spo_item_last_modified" },
+          { "name": "UserIds", "source": "/document/metadata_user_ids" },
+          { "name": "GroupIds", "source": "/document/metadata_group_ids" }
+        ]
+      }
+    ],
+    "parameters": { "projectionMode": "skipIndexingParentDocuments" }
+  }
+}

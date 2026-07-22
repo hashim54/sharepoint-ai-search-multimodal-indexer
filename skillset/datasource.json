@@ -1,0 +1,13 @@
+{
+  "name": "<REPLACE_DATASOURCE_NAME>",
+  "type": "sharepoint",
+  "description": "SharePoint Online document libraries (root + subsites) with ACL ingestion enabled.",
+  "credentials": {
+    "connectionString": "SharePointOnlineEndpoint=<REPLACE_SP_SITE_URL>;ApplicationId=<REPLACE_SP_APP_CLIENT_ID>;ApplicationSecret=<REPLACE_SP_APP_CLIENT_SECRET>;TenantId=<REPLACE_SP_APP_TENANT_ID>"
+  },
+  "indexerPermissionOptions": [ "userIds", "groupIds" ],
+  "container": {
+    "name": "allSiteLibraries",
+    "query": "includeSubsites=true"
+  }
+}

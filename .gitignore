@@ -1,0 +1,16 @@
+# Secrets & derived config (contain live credentials / endpoints)
+.env
+.env.derived
+.env.local
+
+# Bicep build output
+iac/main.json
+
+# Logs
+*.log
+
+# Python
+.venv/
+scripts/.venv/
+**/__pycache__/
+*.pyc
