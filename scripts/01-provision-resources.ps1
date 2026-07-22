@@ -24,19 +24,36 @@ Initialize-Env
 
 Assert-EnvVar -Names @(
     'AZ_SUBSCRIPTION_ID', 'AZ_RG', 'RESOURCE_LOCATION',
-    'EXISTING_SEARCH_NAME', 'EXISTING_FOUNDRY_NAME', 'VISION_NAME',
-    'EMBED_DEPLOYMENT', 'EMBED_MODEL', 'EMBED_SKU', 'EMBED_CAPACITY',
-    'CU_MODEL_DEPLOYMENT', 'CU_MODEL_NAME', 'GPT_SKU', 'GPT_CAPACITY'
+    'SEARCH_NAME', 'FOUNDRY_NAME', 'VISION_NAME'
 )
 
-# Auto-detect the deploying user's object ID so Bicep can grant them
-# Search Index Data Reader (needed for token-based queries / the query notebook).
-$queryPrincipalId = az ad signed-in-user show --query id -o tsv 2>$null
+# Resolve the deploying user's object ID so Bicep can grant them Search Index
+# Data Reader (needed for token-based queries / the query notebook). Try, in
+# order: an explicit env override, Microsoft Graph, then the oid claim inside
+# an access token (works even when Graph is blocked by a CAE/Conditional-Access
+# challenge, which previously caused the role to be silently skipped).
+$queryPrincipalId = $env:QUERY_PRINCIPAL_ID
+if ([string]::IsNullOrWhiteSpace($queryPrincipalId)) {
+    $queryPrincipalId = az ad signed-in-user show --query id -o tsv 2>$null
+}
+if ([string]::IsNullOrWhiteSpace($queryPrincipalId)) {
+    try {
+        $accessToken = az account get-access-token --query accessToken -o tsv 2>$null
+        if (-not [string]::IsNullOrWhiteSpace($accessToken)) {
+            $payload = $accessToken.Split('.')[1].Replace('-', '+').Replace('_', '/')
+            switch ($payload.Length % 4) { 2 { $payload += '==' } 3 { $payload += '=' } }
+            $claims = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($payload)) | ConvertFrom-Json
+            $queryPrincipalId = $claims.oid
+        }
+    } catch { }
+}
 if ([string]::IsNullOrWhiteSpace($queryPrincipalId)) {
     $queryPrincipalId = ''
-    Write-Warning "Could not resolve your object ID (e.g. a Conditional Access / CAE token challenge)."
+    Write-Warning "Could not resolve your object ID (Graph blocked and no token oid)."
     Write-Warning "The 'Search Index Data Reader' role will be SKIPPED. Token-based queries will 403 until you grant it manually:"
     Write-Warning "  az role assignment create --assignee <your-object-id> --role 'Search Index Data Reader' --scope <search-resource-id>"
+} else {
+    Write-Host "==> Query principal (Search Index Data Reader): $queryPrincipalId" -ForegroundColor Cyan
 }
 
 Write-Host "==> Selecting subscription $env:AZ_SUBSCRIPTION_ID" -ForegroundColor Cyan
@@ -78,9 +95,10 @@ $deployArgs = @(
     '--template-file', $tempJson,
     '--parameters',
     "location=$env:RESOURCE_LOCATION",
-    "searchName=$env:EXISTING_SEARCH_NAME",
-    "foundryName=$env:EXISTING_FOUNDRY_NAME",
+    "searchName=$env:SEARCH_NAME",
+    "foundryName=$env:FOUNDRY_NAME",
     "visionName=$env:VISION_NAME",
+    "searchSku=$env:SEARCH_SKU",
     "queryPrincipalId=$queryPrincipalId",
     "createDeployments=$createDeployments",
     "embedDeployment=$env:EMBED_DEPLOYMENT",

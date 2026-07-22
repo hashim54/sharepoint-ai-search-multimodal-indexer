@@ -67,10 +67,44 @@ function Import-DotEnv {
 function Initialize-Env {
     <#
     .SYNOPSIS
-      Loads .env then .env.derived (derived overrides base) from the repo root.
+      Loads .env then .env.derived (derived overrides base) from the repo root,
+      then applies defaults for all optional settings so .env can stay minimal.
     #>
     Import-DotEnv -Path (Join-Path $script:RepoRoot '.env')
     Import-DotEnv -Path (Join-Path $script:RepoRoot '.env.derived')
+
+    # Optional settings with sensible defaults. Anything the user sets in .env
+    # wins; otherwise these apply. Keeping them here lets .env list only the
+    # handful of values a deployment actually MUST provide.
+    Set-EnvDefault 'RESOURCE_LOCATION'   'swedencentral'
+    Set-EnvDefault 'SEARCH_SKU'          'standard'
+    Set-EnvDefault 'EMBED_DEPLOYMENT'    'text-embedding-3-large'
+    Set-EnvDefault 'EMBED_MODEL'         'text-embedding-3-large'
+    Set-EnvDefault 'EMBED_SKU'           'Standard'
+    Set-EnvDefault 'EMBED_CAPACITY'      '30'
+    Set-EnvDefault 'CU_MODEL_NAME'       'gpt-4.1-mini'
+    Set-EnvDefault 'CU_MODEL_DEPLOYMENT' 'gpt-4.1-mini'
+    Set-EnvDefault 'GPT_SKU'             'Standard'
+    Set-EnvDefault 'GPT_CAPACITY'        '1000'
+    Set-EnvDefault 'SEARCH_API_VERSION'  '2026-05-01-preview'
+    Set-EnvDefault 'INDEX_NAME'          'sharepoint-page-index'
+    Set-EnvDefault 'DATASOURCE_NAME'     'sharepoint-ds'
+    Set-EnvDefault 'SKILLSET_NAME'       'sharepoint-mm-skillset'
+    Set-EnvDefault 'INDEXER_NAME'        'sharepoint-indexer'
+}
+
+function Set-EnvDefault {
+    <#
+    .SYNOPSIS
+      Sets a process env var only if it isn't already set (default value).
+    #>
+    param(
+        [Parameter(Mandatory)] [string] $Name,
+        [Parameter(Mandatory)] [string] $Value
+    )
+    if ([string]::IsNullOrWhiteSpace([System.Environment]::GetEnvironmentVariable($Name, 'Process'))) {
+        [System.Environment]::SetEnvironmentVariable($Name, $Value, 'Process')
+    }
 }
 
 function Assert-EnvVar {

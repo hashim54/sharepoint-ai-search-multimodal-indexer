@@ -22,10 +22,10 @@ param()
 Initialize-Env
 
 Assert-EnvVar -Names @(
-    'AZ_SUBSCRIPTION_ID', 'AZ_RG', 'EXISTING_SEARCH_NAME',
+    'AZ_SUBSCRIPTION_ID', 'AZ_RG', 'SEARCH_NAME',
     'SEARCH_ENDPOINT', 'SEARCH_API_VERSION',
     'INDEX_NAME', 'DATASOURCE_NAME', 'SKILLSET_NAME', 'INDEXER_NAME',
-    'FOUNDRY_ENDPOINT',
+    'FOUNDRY_ENDPOINT', 'VISION_ENDPOINT',
     'SP_SITE_URL', 'SP_APP_CLIENT_ID', 'SP_APP_CLIENT_SECRET', 'SP_APP_TENANT_ID'
 )
 
@@ -38,7 +38,7 @@ Assert-LastExit 'az account set'
 # call the data-plane REST API from PowerShell. The key never leaves this run.
 Write-Host "==> Retrieving Search admin key" -ForegroundColor Cyan
 $adminKey = az search admin-key show `
-    --service-name $env:EXISTING_SEARCH_NAME `
+    --service-name $env:SEARCH_NAME `
     --resource-group $env:AZ_RG `
     --query primaryKey -o tsv
 Assert-LastExit 'az search admin-key show'

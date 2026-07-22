@@ -19,7 +19,7 @@ param(
 Initialize-Env
 
 Assert-EnvVar -Names @(
-    'AZ_SUBSCRIPTION_ID', 'AZ_RG', 'EXISTING_SEARCH_NAME',
+    'AZ_SUBSCRIPTION_ID', 'AZ_RG', 'SEARCH_NAME',
     'SEARCH_ENDPOINT', 'SEARCH_API_VERSION', 'INDEXER_NAME'
 )
 
@@ -27,7 +27,7 @@ az account set --subscription $env:AZ_SUBSCRIPTION_ID
 Assert-LastExit 'az account set'
 
 $adminKey = az search admin-key show `
-    --service-name $env:EXISTING_SEARCH_NAME `
+    --service-name $env:SEARCH_NAME `
     --resource-group $env:AZ_RG `
     --query primaryKey -o tsv
 Assert-LastExit 'az search admin-key show'

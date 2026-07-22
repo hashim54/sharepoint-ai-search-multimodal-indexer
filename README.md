@@ -76,23 +76,23 @@ These must be done **once, by an administrator**, before running the deployment:
 
 ## Configuration
 
-All settings live in **`.env`** at the repo root. Provisioning outputs (endpoints, principal IDs) are written to **`.env.derived`** automatically — you don't edit that file.
+All settings live in **`.env`** at the repo root. It is kept **minimal** — only the values a deployment must provide. Everything else (model deployments, SKUs, search API version, index/skillset/indexer names) has sensible defaults applied by [scripts/_common.ps1](scripts/_common.ps1); override any of them by simply adding the variable to `.env`. Provisioning outputs (endpoints, principal IDs) are written to **`.env.derived`** automatically — you don't edit that file.
 
-Key variables to review/set in `.env`:
+Required variables in `.env`:
 
 | Variable | Meaning |
 |----------|---------|
-| `AZ_SUBSCRIPTION_ID`, `AZ_TENANT_ID` | Target subscription / tenant |
+| `AZ_SUBSCRIPTION_ID` | Target subscription |
 | `AZ_RG` | Dedicated resource group (created by step 1) |
-| `RESOURCE_LOCATION` | Region for **all** resources (`swedencentral`) |
-| `EXISTING_SEARCH_NAME` | Globally-unique Search service name to create |
-| `EXISTING_FOUNDRY_NAME` | Globally-unique Foundry account name to create |
+| `RESOURCE_LOCATION` | Region for **all** resources (default `swedencentral`) |
+| `SEARCH_NAME` | Globally-unique Search service name to create |
+| `FOUNDRY_NAME` | Globally-unique Foundry account name to create |
 | `VISION_NAME` | Globally-unique Vision account name to create |
-| `EMBED_*`, `CU_MODEL_*`, `GPT_*` | Model deployment names / SKUs / capacities |
 | `SP_SITE_URL`, `SP_APP_CLIENT_ID`, `SP_APP_TENANT_ID`, `SP_APP_CLIENT_SECRET` | SharePoint site + app registration |
-| `INDEX_NAME`, `DATASOURCE_NAME`, `SKILLSET_NAME`, `INDEXER_NAME` | Search artifact names |
 
-> The `*_NAME` values for Search / Foundry / Vision must be **globally unique**. If a name is taken, deployment preflight fails with `ServiceNameUnavailable` / `CustomDomainInUse` — pick a different name.
+Optional overrides (defaults in `_common.ps1`): `EMBED_*`, `CU_MODEL_*`, `GPT_*` (model deployments/SKUs/capacities), `SEARCH_SKU`, `INDEX_NAME`, `DATASOURCE_NAME`, `SKILLSET_NAME`, `INDEXER_NAME`, `SEARCH_API_VERSION`, and `QUERY_PRINCIPAL_ID` (force the Search Index Data Reader grant).
+
+> The name values for Search / Foundry / Vision must be **globally unique**. If a name is taken, deployment preflight fails with `ServiceNameUnavailable` / `CustomDomainInUse` — pick a different name.
 
 ---
 
@@ -109,7 +109,7 @@ Run from the repo root in PowerShell 7 (after `az login`).
 Creates the resource group, deploys `iac/main.bicep` (Search + Foundry + models + Vision + role assignments), and captures endpoints into `.env.derived`.
 
 - Grants the Search managed identity **Cognitive Services User** on Foundry and Vision.
-- Grants the signed-in user **Search Index Data Reader** (so token-based queries / `query.py` work).
+- Grants the signed-in user **Search Index Data Reader** (so token-based queries / the query notebook work).
 - Optional flag `-SkipDeployments` skips the model deployments (useful if model quota is temporarily unavailable).
 
 ### Step 2 — Deploy the search artifacts
