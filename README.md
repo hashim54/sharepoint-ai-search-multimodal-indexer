@@ -49,6 +49,65 @@ All resources live in resource group **`spmm-rag-poc`** in **Sweden Central** �
 
 ---
 
+## Limits & considerations
+
+These are the limits that shape what this pipeline can ingest. Values below assume the deployed **Standard S1** tier (defaults from `_common.ps1`); higher tiers raise several of them.
+
+### Source file size the indexer can read (pull mode)
+Source files can be far larger than the 16 MB *push* limit, but are capped by tier:
+
+| Tier | Max source file size |
+|------|----------------------|
+| Free / Basic | 16 MB |
+| **S1 (this deployment)** | **128 MB** |
+| S2 / S3 / L1 / L2 | 256 MB |
+
+### Max characters extracted per document
+
+| Tier | Max characters extracted |
+|------|--------------------------|
+| Free | 256,000 |
+| Basic | 512,000 |
+| **S1 (this deployment)** | **4 million** |
+| S2 | 8 million |
+| S3 | 16 million |
+
+### Content Understanding is the *effective* ceiling for this pipeline
+Documents route through the Content Understanding skill, whose limits are **tighter** than the indexer's:
+- **≤ 200 MB** and **≤ 300 pages** per document
+- **~480 seconds** processing budget per document
+
+So the effective ceiling is **≤ 128 MB (S1) AND ≤ 300 pages AND processable within ~480s** — the **page count / 480s budget usually binds before the size limit**. (A dense, image-heavy PDF can exhaust the 480s budget well under 300 pages; raising the `gpt-4.1-mini` deployment capacity helps.)
+
+### Index payload
+- **16 MB** max per indexing request (the enriched document written to the index). Image rows store base64 (`imageData`), which counts toward this — very large images inflate the document.
+
+### Indexer execution
+- **Max running time: 2 hours** (public execution environment; 24h only in a private environment).
+- **Minimum schedule interval: 5 minutes.**
+
+### Per-service object counts (relevant to multi-site scaling)
+- **S1: 50 indexers, 50 datasources, 50 skillsets** (S2/S3: 200 each).
+- **Max 30 skills per skillset.**
+
+This is the ceiling behind the "one indexer per site" scaling limit — a single S1 service tops out at ~50 sites; whole-tenant coverage needs sharding across multiple services.
+
+### Vectors (well within limits)
+- Max **4096 dimensions** per vector field (this index: 3072 text, 1024 image).
+- Max **10 vector fields** per vector query.
+
+### SharePoint indexer-specific constraints
+- ⚠️ **Not supported on tenants with Microsoft Entra Conditional Access enabled.**
+- **No OneNote**, user-encrypted, or password-protected files.
+- **No private endpoints** — secure networking must use the service firewall.
+- **ACL ingestion is preview** ("basic level").
+- **Renaming a folder/site breaks incremental indexing** (treated as new content → re-crawl).
+- Supported formats: PDF, DOCX/XLSX/PPTX, HTML, Markdown, RTF, ODT/ODS/ODP, EML/MSG, CSV, JSON, XML, EPUB, ZIP, plain text.
+
+> Sources: [Azure AI Search service limits](https://learn.microsoft.com/azure/search/search-limits-quotas-capacity) and [SharePoint in Microsoft 365 indexer](https://learn.microsoft.com/azure/search/search-howto-index-sharepoint-online).
+
+---
+
 ## Prerequisites
 
 ### 1. Tooling (local machine)
