@@ -30,9 +30,14 @@ Assert-EnvVar -Names @(
 )
 
 # Auto-detect the deploying user's object ID so Bicep can grant them
-# Search Index Data Reader (needed for token-based queries / query.py).
+# Search Index Data Reader (needed for token-based queries / the query notebook).
 $queryPrincipalId = az ad signed-in-user show --query id -o tsv 2>$null
-if ([string]::IsNullOrWhiteSpace($queryPrincipalId)) { $queryPrincipalId = '' }
+if ([string]::IsNullOrWhiteSpace($queryPrincipalId)) {
+    $queryPrincipalId = ''
+    Write-Warning "Could not resolve your object ID (e.g. a Conditional Access / CAE token challenge)."
+    Write-Warning "The 'Search Index Data Reader' role will be SKIPPED. Token-based queries will 403 until you grant it manually:"
+    Write-Warning "  az role assignment create --assignee <your-object-id> --role 'Search Index Data Reader' --scope <search-resource-id>"
+}
 
 Write-Host "==> Selecting subscription $env:AZ_SUBSCRIPTION_ID" -ForegroundColor Cyan
 az account set --subscription $env:AZ_SUBSCRIPTION_ID

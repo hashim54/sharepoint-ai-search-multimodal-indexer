@@ -137,11 +137,13 @@ The indexer also runs automatically on its `PT1H` schedule, which keeps the inde
 
 ## Querying
 
-`scripts/query.py` runs a hybrid (BM25 + vector) search with semantic ranking, authenticating via `DefaultAzureCredential` (`az login`) — no admin key needed to read.
+Open **`query-examples.ipynb`** (repo root) for runnable, multimodal query examples — hybrid text search, cross-modal text→image search (with inline image rendering), semantic Q&A, filtered search, and a combined multimodal query. It authenticates via `DefaultAzureCredential` (`az login`) — no admin key needed to read.
 
 ```powershell
-python .\scripts\query.py "anatomical diagram of bones" --top 5
+pip install -r scripts/requirements.txt   # azure-identity, requests (+ ipykernel to run the notebook)
 ```
+
+Then run the cells in `query-examples.ipynb`. Each `search(...)` call is editable — swap in your own query, toggle text/image vectors, or add an OData `filter`.
 
 Security trimming: the client sends your Entra token as `x-ms-query-source-authorization`, so results are trimmed to documents whose `UserIds` / `GroupIds` you belong to. Querying with an admin key or from the portal sends no user token and returns **0** trimmed results by design.
 
@@ -162,6 +164,7 @@ az group delete --name spmm-rag-poc --yes
 ```
 .env                     Configuration (edit this; git-ignored, contains secrets)
 .env.derived             Auto-generated provisioning outputs (do not edit)
+query-examples.ipynb     Runnable multimodal query examples (notebook)
 iac/
   main.bicep             From-scratch, single-region infrastructure
   main.json              Compiled ARM (generated)
@@ -171,8 +174,7 @@ scripts/
   01-provision-resources.ps1   Create RG + all Azure resources
   03-deploy-search.ps1         Deploy index / datasource / skillset / indexer
   04-check-status.ps1          Run + monitor the indexer
-  query.py                     Hybrid + semantic query client
-  requirements.txt             Python dependencies for query.py
+  requirements.txt             Python dependencies for the query notebook
 skillset/
   index.json             Multimodal index schema (text + image, ACL fields)
   datasource.json        SharePoint data source (ACL options enabled)
