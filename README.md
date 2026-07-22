@@ -10,6 +10,24 @@ Everything is provisioned **from scratch into a single region** (Sweden Central)
 
 ---
 
+## Prerequisites checklist
+
+Before running the deployment, make sure these are in place (details in [Prerequisites](#prerequisites) below):
+
+**Manual (one-time, can't be automated):**
+- [ ] **Entra app registration** — Graph `Files.Read.All` + `Sites.FullControl.All` (or `Sites.Selected`), **admin-consented**, with a **client secret**.
+- [ ] **SharePoint indexer preview registration** — one-time form at <https://aka.ms/azure-cognitive-search/indexer-preview> (auto-approved).
+- [ ] **SharePoint site + content** — a site with document libraries to index.
+
+**Environment:**
+- [ ] **Azure CLI** (`az login` done), **Bicep**, **PowerShell 7+**, and **Python 3.9+** (for the query notebook).
+- [ ] **Subscription rights** to create resources **and role assignments** (Owner, or User Access Administrator + Contributor).
+- [ ] **Model quota** in the region for `text-embedding-3-large` and `gpt-4.1-mini`.
+
+Everything else (resources, names, roles, index/skillset/indexer) is handled by the scripts.
+
+---
+
 ## Architecture
 
 ```
@@ -40,7 +58,7 @@ All resources live in resource group **`spmm-rag-poc`** in **Sweden Central** �
 | [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) | `az login` completed, with rights to create resources + role assignments in the subscription |
 | Azure CLI Bicep | `az bicep install` (or it auto-installs on first build) |
 | PowerShell 7+ | The `scripts/*.ps1` deployment scripts |
-| Python 3.9+ | Only for the query client (`scripts/query.py`) |
+| Python 3.9+ | Only for the query notebook (`query-examples.ipynb`) |
 
 Install the Python query dependencies:
 
