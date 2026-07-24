@@ -1,0 +1,80 @@
+{
+  "name": "<REPLACE_INDEX_NAME>",
+  "fields": [
+    { "name": "id", "type": "Edm.String", "key": true, "searchable": true, "filterable": true, "sortable": true, "facetable": false, "retrievable": true, "analyzer": "keyword" },
+    { "name": "parent_id", "type": "Edm.String", "searchable": false, "filterable": true, "sortable": true, "facetable": false, "retrievable": true },
+    { "name": "parent_id_img", "type": "Edm.String", "searchable": false, "filterable": true, "sortable": true, "facetable": false, "retrievable": true },
+
+    { "name": "kind", "type": "Edm.String", "searchable": false, "filterable": true, "sortable": false, "facetable": true, "retrievable": true },
+
+    { "name": "content", "type": "Edm.String", "searchable": true, "filterable": false, "sortable": false, "facetable": false, "retrievable": true, "analyzer": "standard.lucene" },
+    {
+      "name": "contentVector",
+      "type": "Collection(Edm.Single)",
+      "searchable": true, "retrievable": false, "stored": false,
+      "filterable": false, "sortable": false, "facetable": false,
+      "dimensions": 3072,
+      "vectorSearchProfile": "text-profile"
+    },
+
+    {
+      "name": "imageVector",
+      "type": "Collection(Edm.Single)",
+      "searchable": true, "retrievable": false, "stored": false,
+      "filterable": false, "sortable": false, "facetable": false,
+      "dimensions": 1024,
+      "vectorSearchProfile": "image-profile"
+    },
+    { "name": "imagePath", "type": "Edm.String", "searchable": false, "filterable": false, "sortable": false, "facetable": false, "retrievable": true },
+    { "name": "imageData", "type": "Edm.String", "searchable": false, "filterable": false, "sortable": false, "facetable": false, "retrievable": true },
+
+    { "name": "page", "type": "Edm.Int32", "searchable": false, "filterable": true, "sortable": true, "facetable": true, "retrievable": true },
+    { "name": "pageTo", "type": "Edm.Int32", "searchable": false, "filterable": true, "sortable": true, "facetable": false, "retrievable": true },
+
+    { "name": "sourceFile", "type": "Edm.String", "searchable": true, "filterable": true, "sortable": true, "facetable": true, "retrievable": true },
+    { "name": "metadata_spo_item_path", "type": "Edm.String", "searchable": false, "filterable": true, "sortable": false, "facetable": false, "retrievable": true },
+    { "name": "webUrl", "type": "Edm.String", "searchable": false, "filterable": false, "sortable": false, "facetable": false, "retrievable": true },
+    { "name": "lastModified", "type": "Edm.DateTimeOffset", "searchable": false, "filterable": true, "sortable": true, "facetable": false, "retrievable": true }
+  ],
+  "vectorSearch": {
+    "algorithms": [
+      { "name": "hnsw-algo", "kind": "hnsw", "hnswParameters": { "m": 4, "efConstruction": 400, "efSearch": 500, "metric": "cosine" } }
+    ],
+    "vectorizers": [
+      {
+        "name": "openai-text-vectorizer",
+        "kind": "azureOpenAI",
+        "azureOpenAIParameters": {
+          "resourceUri": "<REPLACE_FOUNDRY_ENDPOINT>",
+          "deploymentId": "text-embedding-3-large",
+          "modelName": "text-embedding-3-large"
+        }
+      },
+      {
+        "name": "aivision-vectorizer",
+        "kind": "aiServicesVision",
+        "aiServicesVisionParameters": {
+          "resourceUri": "<REPLACE_VISION_ENDPOINT>",
+          "modelVersion": "2023-04-15"
+        }
+      }
+    ],
+    "profiles": [
+      { "name": "text-profile", "algorithm": "hnsw-algo", "vectorizer": "openai-text-vectorizer" },
+      { "name": "image-profile", "algorithm": "hnsw-algo", "vectorizer": "aivision-vectorizer" }
+    ]
+  },
+  "semantic": {
+    "defaultConfiguration": "default",
+    "configurations": [
+      {
+        "name": "default",
+        "prioritizedFields": {
+          "titleField": { "fieldName": "sourceFile" },
+          "prioritizedContentFields": [ { "fieldName": "content" } ],
+          "prioritizedKeywordsFields": []
+        }
+      }
+    ]
+  }
+}

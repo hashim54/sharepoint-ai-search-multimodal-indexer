@@ -1,6 +1,6 @@
 {
   "name": "<REPLACE_SKILLSET_NAME>",
-  "description": "Multimodal, ACL-preserving skillset. CU extracts text sections (with inline figure descriptions) + normalized images; text is embedded with text-embedding-3-large; images are embedded with Azure AI Vision multimodal (1024-dim). Two index projections emit text rows (kind=text) and image rows (kind=image), both carrying SharePoint ACLs. No ACL-breaking skills (Custom Web API / GenAI Prompt / Knowledge store).",
+  "description": "Multimodal skillset (DELEGATED variant, NO ACL ingestion). CU extracts text sections (with inline figure descriptions) + normalized images; text is embedded with text-embedding-3-large; images with Azure AI Vision multimodal (1024-dim). Two index projections emit text rows (kind=text) and image rows (kind=image). ACL fields are intentionally omitted because delegated permissions cannot ingest SharePoint ACLs.",
   "skills": [
     {
       "@odata.type": "#Microsoft.Skills.Util.ContentUnderstandingSkill",
@@ -83,9 +83,7 @@
           { "name": "sourceFile", "source": "/document/metadata_spo_item_name" },
           { "name": "metadata_spo_item_path", "source": "/document/metadata_spo_item_path" },
           { "name": "webUrl", "source": "/document/metadata_spo_item_weburi" },
-          { "name": "lastModified", "source": "/document/metadata_spo_item_last_modified" },
-          { "name": "UserIds", "source": "/document/metadata_user_ids" },
-          { "name": "GroupIds", "source": "/document/metadata_group_ids" }
+          { "name": "lastModified", "source": "/document/metadata_spo_item_last_modified" }
         ]
       },
       {
@@ -102,9 +100,7 @@
           { "name": "sourceFile", "source": "/document/metadata_spo_item_name" },
           { "name": "metadata_spo_item_path", "source": "/document/metadata_spo_item_path" },
           { "name": "webUrl", "source": "/document/metadata_spo_item_weburi" },
-          { "name": "lastModified", "source": "/document/metadata_spo_item_last_modified" },
-          { "name": "UserIds", "source": "/document/metadata_user_ids" },
-          { "name": "GroupIds", "source": "/document/metadata_group_ids" }
+          { "name": "lastModified", "source": "/document/metadata_spo_item_last_modified" }
         ]
       }
     ],

@@ -1,0 +1,21 @@
+{
+  "name": "<REPLACE_INDEXER_NAME>",
+  "description": "Crawls SharePoint document libraries (root + subsites) using DELEGATED permissions, runs the multimodal skillset, and projects one document per text section / image. On-demand only: delegated user tokens expire (~75 min) and require re-authentication, so there is no schedule.",
+  "dataSourceName": "<REPLACE_DATASOURCE_NAME>",
+  "skillsetName": "<REPLACE_SKILLSET_NAME>",
+  "targetIndexName": "<REPLACE_INDEX_NAME>",
+  "parameters": {
+    "batchSize": 5,
+    "maxFailedItems": -1,
+    "maxFailedItemsPerBatch": -1,
+    "configuration": {
+      "dataToExtract": "contentAndMetadata",
+      "allowSkillsetToReadFileData": true,
+      "indexedFileNameExtensions": ".pdf,.docx,.pptx,.xlsx"
+    }
+  },
+  "fieldMappings": [
+    { "sourceFieldName": "metadata_spo_site_library_item_id", "targetFieldName": "id", "mappingFunction": { "name": "base64Encode" } }
+  ],
+  "outputFieldMappings": []
+}

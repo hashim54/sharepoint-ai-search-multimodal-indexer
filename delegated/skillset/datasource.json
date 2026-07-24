@@ -1,0 +1,12 @@
+{
+  "name": "<REPLACE_DATASOURCE_NAME>",
+  "type": "sharepoint",
+  "description": "SharePoint Online document libraries (root + subsites), DELEGATED permissions. No ACL ingestion (delegated does not support it); the indexer reads as the signed-in user.",
+  "credentials": {
+    "connectionString": "SharePointOnlineEndpoint=<REPLACE_SP_SITE_URL>;ApplicationId=<REPLACE_SP_APP_CLIENT_ID>;TenantId=<REPLACE_SP_APP_TENANT_ID>"
+  },
+  "container": {
+    "name": "allSiteLibraries",
+    "query": "includeSubsites=true"
+  }
+}
