@@ -2,15 +2,15 @@
 // SharePoint Multimodal RAG Kit — IaC (from scratch, single region)
 //
 // Creates EVERYTHING needed for the ACL-preserving, multimodal Azure AI
-// Search pipeline in ONE region (Sweden Central, which supports Content
+// Search pipeline in ONE region (e.g. West Europe, which supports Content
 // Understanding, the required models, and Vision multimodal embeddings):
 //   - Azure AI Search service (system-assigned MI, RBAC data-plane enabled)
-//   - Foundry (AIServices) account for Content Understanding + text embeddings
-//   - Model deployments: text-embedding-3-large + gpt-4.1-mini
-//   - Azure AI Vision (AIServices) account for multimodal image embeddings
-//   - Role assignments: Search MI -> Foundry and Search MI -> Vision
-//     (Cognitive Services User); optionally the deploying user -> Search
-//     Index Data Reader (so token-based queries / query.py work).
+//   - Foundry (AIServices) account + a Foundry PROJECT (new-portal visible),
+//     serving Content Understanding + text embeddings + GPT (CU captions) +
+//     Vision multimodal embeddings — ONE resource for everything.
+//   - Model deployments: text-embedding-3-large + gpt-4o-mini
+//   - Role assignments: Search MI -> Foundry (Cognitive Services User);
+//     optionally the deploying user -> Search Index Data Reader.
 //
 // MANUAL PREREQUISITES (cannot be provisioned here):
 //   - Entra app registration with Graph Files.Read.All + Sites.FullControl.All
@@ -33,7 +33,7 @@ param location string = 'swedencentral'
 param searchName string
 param searchSku string = 'standard'
 param foundryName string
-param visionName string
+param foundryProjectName string = '${foundryName}-project'
 
 // Model deployments (on the Foundry account)
 param createDeployments bool = true
@@ -41,8 +41,8 @@ param embedDeployment string = 'text-embedding-3-large'
 param embedModel string = 'text-embedding-3-large'
 param embedSku string = 'Standard'
 param embedCapacity int = 30
-param cuModelDeployment string = 'gpt-4.1-mini'
-param cuModelName string = 'gpt-4.1-mini'
+param cuModelDeployment string = 'gpt-4o-mini'
+param cuModelName string = 'gpt-4o-mini'
 param gptSku string = 'Standard'
 param gptCapacity int = 100
 
@@ -78,9 +78,12 @@ resource search 'Microsoft.Search/searchServices@2024-06-01-preview' = {
 }
 
 // ============================================================
-// Foundry (AIServices) — Content Understanding + text embeddings + GPT
+// Foundry (AIServices) — ONE resource for Content Understanding + text
+// embeddings + GPT (CU figure captions) + Vision multimodal embeddings.
+// allowProjectManagement:true plus a project child make it a NEW-experience
+// Foundry account/project, visible in the Foundry portal (ai.azure.com).
 // ============================================================
-resource foundry 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
+resource foundry 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   name: foundryName
   location: location
   kind: 'AIServices'
@@ -93,10 +96,27 @@ resource foundry 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   properties: {
     // Custom subdomain is required for AAD/MI token auth (used by the search MI).
     customSubDomainName: foundryName
+    // Turns this AIServices account into a new-experience Foundry account.
+    allowProjectManagement: true
   }
 }
 
-resource embedDeploy 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = if (createDeployments) {
+// Default Foundry project (new-portal experience). The pipeline calls the
+// ACCOUNT endpoint, so this is for management/visibility; no extra role needed.
+resource foundryProject 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
+  parent: foundry
+  name: foundryProjectName
+  location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    displayName: foundryProjectName
+    description: 'SharePoint multimodal RAG — CU, text embeddings, GPT captions, Vision multimodal.'
+  }
+}
+
+resource embedDeploy 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = if (createDeployments) {
   parent: foundry
   name: embedDeployment
   sku: {
@@ -111,7 +131,7 @@ resource embedDeploy 'Microsoft.CognitiveServices/accounts/deployments@2024-10-0
   }
 }
 
-resource gptDeploy 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = if (createDeployments) {
+resource gptDeploy 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = if (createDeployments) {
   parent: foundry
   name: cuModelDeployment
   sku: {
@@ -130,23 +150,6 @@ resource gptDeploy 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01'
 }
 
 // ============================================================
-// Azure AI Vision (AIServices) — multimodal image embeddings
-//   Used by the AI Search query-time vectorizer (aiServicesVision) and the
-//   VectorizeSkill. Must be in a region that supports multimodal embeddings.
-// ============================================================
-resource vision 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
-  name: visionName
-  location: location
-  kind: 'AIServices'
-  sku: {
-    name: 'S0'
-  }
-  properties: {
-    customSubDomainName: visionName
-  }
-}
-
-// ============================================================
 // Role Assignments
 // ============================================================
 
@@ -154,17 +157,6 @@ resource vision 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
 resource raSearchOnFoundry 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(search.id, foundry.id, cogSvcUserRole)
   scope: foundry
-  properties: {
-    principalId: search.identity.principalId
-    principalType: 'ServicePrincipal'
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cogSvcUserRole)
-  }
-}
-
-// --- Search MI -> Vision (query-time image vectorizer + VectorizeSkill) ---
-resource raSearchOnVision 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(search.id, vision.id, cogSvcUserRole)
-  scope: vision
   properties: {
     principalId: search.identity.principalId
     principalType: 'ServicePrincipal'
@@ -186,8 +178,8 @@ resource raQueryReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = if
 // ============================================================
 // Outputs
 // ============================================================
-output searchEndpoint string    = 'https://${search.name}.search.windows.net'
-output foundryEndpoint string   = foundry.properties.endpoint
-output foundryName string       = foundry.name
-output visionEndpoint string    = vision.properties.endpoint
-output searchPrincipalId string = search.identity.principalId
+output searchEndpoint string      = 'https://${search.name}.search.windows.net'
+output foundryEndpoint string     = foundry.properties.endpoint
+output foundryName string         = foundry.name
+output foundryProjectName string  = foundryProject.name
+output searchPrincipalId string   = search.identity.principalId

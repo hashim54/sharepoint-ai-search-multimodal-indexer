@@ -59,7 +59,7 @@
         "name": "aivision-vectorizer",
         "kind": "aiServicesVision",
         "aiServicesVisionParameters": {
-          "resourceUri": "<REPLACE_VISION_ENDPOINT>",
+          "resourceUri": "<REPLACE_FOUNDRY_ENDPOINT>",
           "modelVersion": "2023-04-15"
         }
       }

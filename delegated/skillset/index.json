@@ -34,7 +34,10 @@
     { "name": "sourceFile", "type": "Edm.String", "searchable": true, "filterable": true, "sortable": true, "facetable": true, "retrievable": true },
     { "name": "metadata_spo_item_path", "type": "Edm.String", "searchable": false, "filterable": true, "sortable": false, "facetable": false, "retrievable": true },
     { "name": "webUrl", "type": "Edm.String", "searchable": false, "filterable": false, "sortable": false, "facetable": false, "retrievable": true },
-    { "name": "lastModified", "type": "Edm.DateTimeOffset", "searchable": false, "filterable": true, "sortable": true, "facetable": false, "retrievable": true }
+    { "name": "lastModified", "type": "Edm.DateTimeOffset", "searchable": false, "filterable": true, "sortable": true, "facetable": false, "retrievable": true },
+
+    { "name": "UserIds", "type": "Collection(Edm.String)", "searchable": false, "filterable": true, "sortable": false, "facetable": false, "retrievable": true },
+    { "name": "GroupIds", "type": "Collection(Edm.String)", "searchable": false, "filterable": true, "sortable": false, "facetable": false, "retrievable": true }
   ],
   "vectorSearch": {
     "algorithms": [
@@ -54,7 +57,7 @@
         "name": "aivision-vectorizer",
         "kind": "aiServicesVision",
         "aiServicesVisionParameters": {
-          "resourceUri": "<REPLACE_VISION_ENDPOINT>",
+          "resourceUri": "<REPLACE_FOUNDRY_ENDPOINT>",
           "modelVersion": "2023-04-15"
         }
       }

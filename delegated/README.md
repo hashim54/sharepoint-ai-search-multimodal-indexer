@@ -29,7 +29,7 @@ This folder is a **self-contained variant** of the pipeline that uses **delegate
    SP_DEL_CLIENT_ID="<client id of the delegated app registration>"
    ```
    (`SP_SITE_URL` and `SP_APP_TENANT_ID` are reused from the primary `.env`. `SP_APP_CLIENT_SECRET` is **not** used here.)
-3. The shared Azure resources (Search / Foundry / Vision) must already exist — run the primary `scripts/01-provision-resources.ps1` first so `.env.derived` holds `SEARCH_ENDPOINT`, `FOUNDRY_ENDPOINT`, `VISION_ENDPOINT`.
+3. The shared Azure resources (Search / Foundry) must already exist — run the primary `scripts/01-provision-resources.ps1` first so `.env.derived` holds `SEARCH_ENDPOINT` and `FOUNDRY_ENDPOINT`.
 
 ## Deploy
 

@@ -9,7 +9,6 @@ $params = @(
     "location=$env:RESOURCE_LOCATION",
     "searchName=$env:SEARCH_NAME",
     "foundryName=$env:FOUNDRY_NAME",
-    "visionName=$env:VISION_NAME",
     "embedDeployment=$env:EMBED_DEPLOYMENT",
     "embedModel=$env:EMBED_MODEL",
     "embedSku=$env:EMBED_SKU",

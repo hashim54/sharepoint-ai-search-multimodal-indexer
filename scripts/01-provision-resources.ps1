@@ -78,8 +78,7 @@ $suffix = -join ((97..122) + (48..57) | Get-Random -Count 6 | ForEach-Object { [
 
 foreach ($pair in @(
         @{ Var = 'SEARCH_NAME';  Role = 'search' },
-        @{ Var = 'FOUNDRY_NAME'; Role = 'foundry' },
-        @{ Var = 'VISION_NAME';  Role = 'vision' })) {
+        @{ Var = 'FOUNDRY_NAME'; Role = 'foundry' })) {
     $existing = [System.Environment]::GetEnvironmentVariable($pair.Var, 'Process')
     if ([string]::IsNullOrWhiteSpace($existing)) {
         $generated = "$prefix-$($pair.Role)-$suffix"
@@ -118,7 +117,6 @@ $deployArgs = @(
     "location=$env:RESOURCE_LOCATION",
     "searchName=$env:SEARCH_NAME",
     "foundryName=$env:FOUNDRY_NAME",
-    "visionName=$env:VISION_NAME",
     "searchSku=$env:SEARCH_SKU",
     "queryPrincipalId=$queryPrincipalId",
     "createDeployments=$createDeployments",
@@ -144,7 +142,6 @@ $out = $deploy.properties.outputs
 Write-Host "==> Capturing outputs into .env.derived" -ForegroundColor Cyan
 Set-DerivedVar -Name 'SEARCH_ENDPOINT'      -Value $out.searchEndpoint.value
 Set-DerivedVar -Name 'FOUNDRY_ENDPOINT'     -Value $out.foundryEndpoint.value
-Set-DerivedVar -Name 'VISION_ENDPOINT'      -Value $out.visionEndpoint.value
 Set-DerivedVar -Name 'SEARCH_PRINCIPAL_ID'  -Value $out.searchPrincipalId.value
 
 Write-Host ""
